@@ -1,0 +1,27 @@
+# 특정 IP에서 전송한 HTTP 응답
+alert tcp 203.246.40.6/31 $HTTP_PORTS -> $HOME_NET any (msg:"http respond detected"; content:"HTTP/1.1"; classtype:misc-activity; sid:1000001; rev:1;)
+
+# 특정 IP에서 전송한 패킷에 ".exe"가 포함
+alert tcp 203.246.40.0/24 any -> $HOME_NET any (msg:"exe detected"; content:"|50 4B 03 04|"; classtype:inappropriate-content; sid:1000001; rev:1;)
+
+# HTTP 응답
+alert tcp any $HTTP_PORTS -> $HOME_NET any (msg:"HTTP GET detected"; content:"GET"; offset:0; depth:3; classtype:misc-activity; sid:1000001; rev:1;)
+
+# 내용에 hacking이 포함된 이메일
+alert tcp $EXTERNAL_NET any -> #HOME_NET 25 (msg:"Found hacking reference in email"; content: "hacking";)
+
+# 이메일을 보내는 사람의 주소에 특정 바이트를 주입하는 공격 탐지
+alert tcp $EXTERNAL_NET any -> $SMTP_SERVERS 25 (msg:"SMTP sendmail 5.5.5 exploit"; flow:to_server,established; content:"mailfrom|3120227c|"; nocase; reference:arachnids,119;classtype:attempted-admin; sid:662; rev:4;)
+
+# IIS 웹서버에 대한 url 내 bof 취약점 공격 시도 탐지
+alert tcp $EXTERNAL_NET any -> $HTTP_SERVERS $HTTP_PORTS (msg:"WEB-IIS .asa HTTP header buffer overflow attempt"; flow:to_server,established; content:"HTTP|2F|"; nocase; uricontent:".asa"; nocase; content:"|3A|"; content:"|0A|"; content:"|00|"; reference:bug-traq,4476; classtype:web-application-attack; sid:1802; rev:4;)
+
+#비정상 synchronize 탐지
+alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg: "SYN-FIN Scan"; flags: SF;)
+alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg: "FIN Scan"; flags: F;)
+
+# V3 업데이트 요청
+alert tcp any any -> any any (msg:"V3 Update request detected"; content:"User-Agent"; content:"v3"; within:20; nocase; content:"update.ahnlab.com"; flow:to_server; classtype:misc-activity; sid:1000001; rev:1;)
+
+# Master 카드 번호
+alert tcp any any -> any any(msg:"card serial request"; content:"4\d{3}(-|\s)?\d{4}(-|\s)?\d{4}(-|\s)?\d{4}";)
